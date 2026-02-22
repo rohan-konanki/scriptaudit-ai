@@ -1,0 +1,9 @@
+services:
+    vectoraidb:
+       image: williamimoh/actian-vectorai-db:1.0b
+       container_name: actian-vectorai
+       ports:
+         - "50051:50051"
+       volumes:
+         - ./data:/data
+       restart: unless-stopped

@@ -141,7 +141,6 @@ def audit_script(script_idea, output_filename):
         os.fsync(f.fileno()) # Deep flush to disk
         
     print(f"✅ Success! File updated at {timestamp}")
-    print(results)
     return results
 
 if __name__ == "__main__":

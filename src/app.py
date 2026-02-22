@@ -105,7 +105,6 @@ with col1:
                 
                 # 1. CAPTURE THE LIVE RESULTS
                 results = audit_script(user_idea, "web_demo_audit") 
-                print(f"DEBUG: {results}")
                 if results:
                     # 2. Explicitly commit to session state
                     st.session_state.actian_results = results 

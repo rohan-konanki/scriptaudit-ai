@@ -22,16 +22,20 @@ High-integrity analysis tool designed to bridge the gap between creative script 
 **Frontend:** Streamlit
 
 ## Installation & Setup
+### Note: These steps are only verified on Windows, and may fail on macOS or Linux.
 #### 1. Clone the Repository
 ```
 git clone https://github.com/rohan-konanki/scriptaudit-ai.git
 cd scriptaudit-ai
 ```
 #### 2. Install Dependencies
-Ensure you have a Python 3.10+ environment. Note that the Actian client is installed via a local wheel file included in the repository.
-
+Ensure you have a Python 3.10+ environment. Note that the Actian client is installed via a local wheel file included in the repository. Highly recommended to use a virtual environment to ensure proper functionality.
 ```
 pip install -r requirements.txt
+```
+Authenticate Sphinx using `sphinx-cli login`, otherwise the app will not function as intended. If `sphinx-cli` is not recognized as a command, try:
+```
+python -c "from sphinx_cli.runner import main; import sys; sys.exit(main())" login
 ```
 #### 3. Environment Variables
 Create a .env file in the root directory and Gemini API key:
@@ -40,7 +44,7 @@ Create a .env file in the root directory and Gemini API key:
 GEMINI_API_KEY=your_api_key_here
 ```
 #### 4. Launch Actian VectorAI DB
-Start the local vector database cluster using Docker Compose:
+Ensure that Docker Desktop is running, and start the local vector database cluster using Docker Compose:
 
 ```
 docker-compose up -d

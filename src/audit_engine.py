@@ -45,6 +45,7 @@ def audit_script(script_idea, output_filename):
             top_k=3,
             with_payload=True
         )
+        print(f"DEBUG: Actian returned {len(results) if results else 0} results") # Add this!
     
     if not results:
         print("No similar movies found.")
@@ -103,7 +104,7 @@ def audit_script(script_idea, output_filename):
     
     # 6. GENERATE REPORT
     # Using v1beta for the latest 2026 models
-    generate_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    generate_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
     generate_payload = {
         "contents": [{"parts": [{"text": prompt_text}]}]
     }
@@ -137,6 +138,8 @@ def audit_script(script_idea, output_filename):
         os.fsync(f.fileno()) # Deep flush to disk
         
     print(f"✅ Success! File updated at {timestamp}")
+    print(results)
+    return results
 
 if __name__ == "__main__":
     test_idea = "A lonely garbage collector robot on a ruined Earth discovers a tiny plant, sparking a journey across the galaxy."

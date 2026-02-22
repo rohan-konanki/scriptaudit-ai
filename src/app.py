@@ -61,17 +61,25 @@ if 'audit_complete' not in st.session_state:
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("System Architecture")
-    st.status("Actian VectorAI", state="complete")
-    st.status("Gemini 2.5 Flash", state="complete")
+    st.status("Actian VectorAI DB", state="complete")
+    st.status("Gemini 2.5 Flash Lite", state="complete")
     st.status("Sphinx AI Auditor", state="complete")
     
     st.markdown("---")
     st.info("""
     **Pipeline Flow:**
-    1. **Vector Search:** Actian VectorAI retrieves matches.
+    1. **Vector Search:** Actian VectorAI DB retrieves matches.
     2. **Generation:** Gemini constructs a structured report.
     3. **Verification:** Sphinx Agent performs a schema audit.
     """)
+    st.markdown("---")
+    strict_mode = st.toggle("Enforce Strict Audit", value=False, help="Enable cross-referencing for potential hallucinations.")
+    st.markdown("---")
+    if st.button("Clear Session", use_container_width=True):
+        st.session_state.audit_complete = False
+        st.session_state.actian_results = None
+        st.rerun()
+
 
 # --- MAIN UI ---
 st.title("ScriptAudit AI")
@@ -91,51 +99,85 @@ with col1:
 
     if run_btn:
         if user_idea:
-            # Step 1: Run the Backend
+
             with st.status("Pipeline Executing...", expanded=True) as status:
-                st.write("Querying Actian Vector Database...")
-                # Note: Ensure this function exists in your audit_engine.py
-                audit_script(user_idea, "web_demo_audit")
+                st.write("Querying Actian VectorAI DB...")
+                
+                # 1. CAPTURE THE LIVE RESULTS
+                results = audit_script(user_idea, "web_demo_audit") 
+                print(f"DEBUG: {results}")
+                if results:
+                    # 2. Explicitly commit to session state
+                    st.session_state.actian_results = results 
+                    st.session_state.audit_complete = True
+                    status.update(label="Syncing with Vector Cluster...", state="complete")
+                    time.sleep(0.5) 
+                    st.rerun() 
+                else:
+                    st.error("Engine returned empty results.")
+
                 
                 st.write("Generating Traceable Audit Report...")
                 time.sleep(1) 
-                
                 status.update(label="Local Execution Complete. Starting Agentic Audit...", state="running")
             
-            # Step 2: Signal Completion
             st.session_state.audit_complete = True
-            st.rerun() # Refresh to populate Tab 3
+            st.rerun()
         else:
             st.error("Please enter a concept first.")
 
 with col2:
     if st.session_state.audit_complete:
-        tab1, tab2, tab3 = st.tabs(["Vector Matches", "Live Agent Audit", "Validated Report"])
+        tab1, tab2, tab3 = st.tabs(["Vector Matches", "Sphinx Audit", "Validated Report"])
         
         with tab1:
-            st.write("### 🧬 Actian VectorAI Results")
-            matches = pd.DataFrame({
-                "Rank": [1, 2, 3],
-                "Movie": ["Waterworld", "Independence Day: Resurgence", "Transformers: Age of Extinction"],
-                "Similarity": [0.9124, 0.7841, 0.6522],
-                "Status": ["✅ Verified", "✅ Verified", "✅ Verified"]
-            })
-            st.table(matches)
-            st.caption("Embedding Model: text-embedding-004 | Dimensions: 768")
+            st.write("### 🧬 Actian VectorAI DB Results")
+            
+            # Use .get() to avoid errors if the key doesn't exist yet
+            raw_matches = st.session_state.get('actian_results')
+            
+            # SAFETY CHECK: Only iterate if raw_matches is NOT None
+            if raw_matches is not None:
+                formatted_data = []
+                for i, res in enumerate(raw_matches):
+                    # Safe extraction of title and score
+                    title = res.payload.get('title', 'Unknown Title') if hasattr(res, 'payload') else "Unknown"
+                    score = getattr(res, 'score', 0.0)
+                    
+                    formatted_data.append({
+                        "Rank": i + 1,
+                        "Movie": title,
+                        "Similarity": round(score, 4),
+                        "Status": "✅ Verified"
+                    })
+                
+                st.table(pd.DataFrame(formatted_data))
+                st.caption("Data source: Actian VectorAI DB")
+            else:
+                # Show a helpful message instead of crashing
+                st.info("Results will appear here once the pipeline execution is complete.")
 
         with tab2:
-            st.write("### 🤖 Real-Time Sphinx Reasoning")
+            st.write("### Real-Time Sphinx Reasoning")
             log_container = st.empty()
-            
+
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
             env["PYTHONUTF8"] = "1"
 
-            cmd = [
-                "sphinx-cli", "chat", 
-                "--no-memory-write", 
-                "--prompt", "Analyze @src/ingest.py and @docs/source/reports/web_demo_audit.md. Does the report utilize the 'title' and 'plot' fields defined in the ingest script?"
-            ]
+            if strict_mode:
+                audit_prompt = (
+                    "URGENT: Perform a HIGH-STRICTNESS audit of @docs/source/reports/web_demo_audit.md against @src/ingest.py. "
+                    "Identify any 'Narrative Hallucinations' where the report adds plot details not found in the source payload. "
+                    "Verify that EVERY 'title' matches EXACTLY. If you find a single discrepancy, flag it as a 'SCHEMA_VIOLATION'."
+                )
+            else:
+                audit_prompt = (
+                    "Analyze @src/ingest.py and @docs/source/reports/web_demo_audit.md. "
+                    "Does the report utilize the 'title' and 'plot' fields defined in the ingest script?"
+                )
+            
+            cmd = ["sphinx-cli", "chat", "--no-memory-write", "--prompt", audit_prompt]
 
             full_log = ""
             # Capture the live terminal output
@@ -143,7 +185,8 @@ with col2:
                 for line in proc.stdout:
                     full_log += line
                     log_container.code(full_log, language="bash")
-            
+
+
             if proc.returncode == 0:
                 st.success("✅ Sphinx Audit Verified: Report matches database schema.")
                 
@@ -182,4 +225,4 @@ with col2:
                     key="dl_btn_final"
                 )
     else:
-        st.info("👈 Enter a concept and execute the pipeline to see the Agentic Audit in action.")
+        st.info("Enter a concept and execute the pipeline to see the Agentic Audit in action.")

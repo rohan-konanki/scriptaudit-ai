@@ -38,14 +38,17 @@ def audit_script(script_idea, output_filename):
     
     # 3. ACTIAN SEARCH
     # Using with_payload=True to ensure Sphinx has data to audit
-    with CortexClient("localhost:50051") as db_client:
-        results = db_client.search(
-            "movies", 
-            query=query_vector, 
-            top_k=3,
-            with_payload=True
-        )
-        print(f"DEBUG: Actian returned {len(results) if results else 0} results") # Add this!
+    try:
+        with CortexClient("localhost:50051") as db_client:
+            results = db_client.search(
+                "movies", 
+                query=query_vector, 
+                top_k=3,
+                with_payload=True
+            )
+    except Exception as e:
+        print(f"❌ Actian DB Connection Error: Is the container running on port 50051? ({e})")
+        return None
     
     if not results:
         print("No similar movies found.")
@@ -104,7 +107,7 @@ def audit_script(script_idea, output_filename):
     
     # 6. GENERATE REPORT
     # Using v1beta for the latest 2026 models
-    generate_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
+    generate_url = f"https://generativelanguage.googleapis.com/v1alpha/models/gemini-3-flash-preview:generateContent?key={api_key}"
     generate_payload = {
         "contents": [{"parts": [{"text": prompt_text}]}]
     }

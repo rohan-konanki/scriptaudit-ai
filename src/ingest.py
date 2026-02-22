@@ -1,17 +1,22 @@
 import pandas as pd
 import requests
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from cortex import CortexClient, DistanceMetric
 import time
 
-load_dotenv('../.env')
+current_dir = Path(__file__).resolve().parent
+env_path = current_dir.parent / '.env'
+csv_path = current_dir.parent / 'data' / 'tmdb_5000_movies.csv'
+
+load_dotenv(dotenv_path=env_path)
 api_key = os.getenv("GEMINI_API_KEY")
 
 def ingest_movies():
     print("Loading TMDB dataset...")
-    df = pd.read_csv('../data/tmdb_5000_movies.csv')
-    df = df.dropna(subset=['overview']).head(100)
+    df = pd.read_csv(csv_path)
+    df = df.dropna(subset=['overview']).head(200)
     
     with CortexClient("localhost:50051") as db_client:
         print("Recreating 'movies' collection with 3072 dimensions...")

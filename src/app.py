@@ -62,7 +62,7 @@ if 'audit_complete' not in st.session_state:
 with st.sidebar:
     st.title("System Architecture")
     st.status("Actian VectorAI DB", state="complete")
-    st.status("Gemini 2.5 Flash Lite", state="complete")
+    st.status("Gemini 3 Flash", state="complete")
     st.status("Sphinx AI Auditor", state="complete")
     
     st.markdown("---")
@@ -181,7 +181,8 @@ with col2:
 
             full_log = ""
             # Capture the live terminal output
-            with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding="utf-8", env=env) as proc:
+            root_dir = str(Path(__file__).resolve().parent.parent)
+            with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, encoding="utf-8", env=env, cwd=root_dir) as proc:
                 for line in proc.stdout:
                     full_log += line
                     log_container.code(full_log, language="bash")
